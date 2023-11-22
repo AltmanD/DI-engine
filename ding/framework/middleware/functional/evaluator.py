@@ -224,6 +224,7 @@ def interaction_evaluator(cfg: EasyDict, policy: Policy, env: BaseEnvManager, re
         return task.void()
 
     env.seed(cfg.seed, dynamic_seed=False)
+    total_time = 0
 
     def _evaluate(ctx: Union["OnlineRLContext", "OfflineRLContext"]):
         """
@@ -238,6 +239,9 @@ def interaction_evaluator(cfg: EasyDict, policy: Policy, env: BaseEnvManager, re
         """
 
         # evaluation will be executed if the task begins or enough train_iter after last evaluation
+        nonlocal total_time
+        import time
+        temp_time = time.time()
         if ctx.last_eval_iter != -1 and \
            (ctx.train_iter - ctx.last_eval_iter < cfg.policy.eval.evaluator.eval_freq):
             return
@@ -273,10 +277,11 @@ def interaction_evaluator(cfg: EasyDict, policy: Policy, env: BaseEnvManager, re
         episode_return_std = np.std(episode_return)
         episode_return = np.mean(episode_return)
         stop_flag = episode_return >= cfg.env.stop_value and ctx.train_iter > 0
+        total_time += time.time() - temp_time
         if isinstance(ctx, OnlineRLContext):
             logging.info(
-                'Evaluation: Train Iter({})\tEnv Step({})\tEpisode Return({:.3f})'.format(
-                    ctx.train_iter, ctx.env_step, episode_return
+                'Evaluation: Train Iter({})\tEnv Step({})\tEpisode Return({:.3f})\tTime Cost in Eval({:3f})'.format(
+                    ctx.train_iter, ctx.env_step, episode_return, total_time
                 )
             )
         elif isinstance(ctx, OfflineRLContext):

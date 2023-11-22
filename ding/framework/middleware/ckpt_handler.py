@@ -32,6 +32,7 @@ class CkptSaver:
             - train_freq (:obj:`int`): Number of training iterations between each saving checkpoint data.
             - save_finish (:obj:`bool`): Whether save final ckpt when ``task.finish = True``.
         """
+        self.total_time = 0
         self.policy = policy
         self.train_freq = train_freq
         if str(os.path.basename(os.path.normpath(save_dir))) != "ckpt":
@@ -57,6 +58,8 @@ class CkptSaver:
             - eval_value (:obj:`float`): The episode return of current iteration.
         """
         # train enough iteration
+        import time
+        temp_time = time.time()
         if self.train_freq:
             if ctx.train_iter == 0 or ctx.train_iter - self.last_save_iter >= self.train_freq:
                 save_file(
@@ -72,3 +75,12 @@ class CkptSaver:
         # finish
         if task.finish and self.save_finish:
             save_file("{}/final.pth.tar".format(self.prefix), self.policy.learn_mode.state_dict())
+
+        self.total_time += time.time() - temp_time
+        from ditk import logging
+        if ctx.train_iter % 500 == 0:
+            logging.info(
+                'Logger: Time Cost in Logger({:3f})'.format(
+                    self.total_time
+                )
+            )

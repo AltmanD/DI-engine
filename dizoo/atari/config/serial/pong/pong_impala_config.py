@@ -16,6 +16,7 @@ pong_impala_config = dict(
         priority=False,
         # (int) the trajectory length to calculate v-trace target
         unroll_len=64,
+        random_collect_size=0,
         model=dict(
             obs_shape=[4, 84, 84],
             action_shape=6,
@@ -56,7 +57,7 @@ pong_impala_config = dict(
             n_sample=16,
             collector=dict(collect_print_freq=1000, ),
         ),
-        eval=dict(evaluator=dict(eval_freq=2000, )),
+        eval=dict(evaluator=dict(eval_freq=1000, )),
         other=dict(replay_buffer=dict(replay_buffer_size=10000, sliced=False), ),
     ),
 )

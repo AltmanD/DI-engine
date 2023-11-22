@@ -41,6 +41,7 @@ class OffPolicyLearner:
                 default to None.
             - log_freq (:obj:`int`): The frequency (iteration) of showing log.
         """
+        self.total_time = 0
         self.cfg = cfg
         self._fetcher = task.wrap(offpolicy_data_fetcher(cfg, buffer_))
         self._trainer = task.wrap(trainer(cfg, policy, log_freq=log_freq))
@@ -54,6 +55,8 @@ class OffPolicyLearner:
         Output of ctx:
             - train_output (:obj:`Deque`): The training output in deque.
         """
+        import time
+        temp_time = time.time()
         train_output_queue = []
         for _ in range(self.cfg.policy.learn.update_per_collect):
             self._fetcher(ctx)
@@ -64,6 +67,14 @@ class OffPolicyLearner:
             self._trainer(ctx)
             train_output_queue.append(ctx.train_output)
         ctx.train_output = train_output_queue
+        self.total_time += time.time() - temp_time
+        from ditk import logging
+        if ctx.train_iter % 500 == 0:
+            logging.info(
+                'Learner: Time Cost in Learner({:3f})'.format(
+                    self.total_time
+                )
+            )
 
 
 class HERLearner:

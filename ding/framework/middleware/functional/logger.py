@@ -41,11 +41,14 @@ def online_logger(record_train_iter: bool = False, train_show_freq: int = 100) -
     if writer is None:
         raise RuntimeError("logger writer is None, you should call `ding_init(cfg)` at the beginning of training.")
     last_train_show_iter = -1
+    total_time = 0
 
     def _logger(ctx: "OnlineRLContext"):
+        import time
+        temp_time = time.time()
         if task.finish:
             writer.close()
-        nonlocal last_train_show_iter
+        nonlocal last_train_show_iter, total_time
 
         if not np.isinf(ctx.eval_value):
             if record_train_iter:
@@ -76,6 +79,15 @@ def online_logger(record_train_iter: bool = False, train_show_freq: int = 100) -
                         writer.add_scalar('basic/train_{}-env_step'.format(k), v, ctx.env_step)
                     else:
                         writer.add_scalar('basic/train_{}'.format(k), v, ctx.env_step)
+
+            total_time += time.time() - temp_time
+            from ditk import logging
+            if ctx.train_iter % 500 == 0:
+                logging.info(
+                    'Logger: Time Cost in Logger({:3f})'.format(
+                        total_time
+                    )
+                )
 
     return _logger
 

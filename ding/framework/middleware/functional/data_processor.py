@@ -11,7 +11,6 @@ from ding.utils import get_rank
 if TYPE_CHECKING:
     from ding.framework import OnlineRLContext, OfflineRLContext
 
-
 def data_pusher(cfg: EasyDict, buffer_: Buffer, group_by_env: Optional[bool] = None):
     """
     Overview:
@@ -22,6 +21,7 @@ def data_pusher(cfg: EasyDict, buffer_: Buffer, group_by_env: Optional[bool] = N
     """
     if task.router.is_active and not task.has_role(task.role.LEARNER):
         return task.void()
+    total_time = 0
 
     def _push(ctx: "OnlineRLContext"):
         """
@@ -32,6 +32,9 @@ def data_pusher(cfg: EasyDict, buffer_: Buffer, group_by_env: Optional[bool] = N
             - episodes (:obj:`List[Dict]`): Episodes.
         """
 
+        nonlocal total_time
+        import time
+        temp_time = time.time()
         if ctx.trajectories is not None:  # each data in buffer is a transition
             if group_by_env:
                 for i, t in enumerate(ctx.trajectories):
@@ -46,6 +49,13 @@ def data_pusher(cfg: EasyDict, buffer_: Buffer, group_by_env: Optional[bool] = N
             ctx.episodes = None
         else:
             raise RuntimeError("Either ctx.trajectories or ctx.episodes should be not None.")
+        total_time += time.time() - temp_time
+        if ctx.train_iter % 500 == 0:
+            logging.info(
+                'Data Pusher: Time Cost in Data Push({:3f})'.format(
+                    total_time
+                )
+            )
 
     return _push
 

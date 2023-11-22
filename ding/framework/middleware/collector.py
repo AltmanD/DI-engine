@@ -33,6 +33,7 @@ class StepCollector:
             - random_collect_size (:obj:`int`): The count of samples that will be collected randomly, \
                 typically used in initial runs.
         """
+        self.total_time = 0
         self.cfg = cfg
         self.env = env
         self.policy = policy
@@ -49,6 +50,8 @@ class StepCollector:
         Input of ctx:
             - env_step (:obj:`int`): The env steps which will increase during collection.
         """
+        import time
+        temp_time = time.time()
         old = ctx.env_step
         if self.random_collect_size > 0 and old < self.random_collect_size:
             target_size = self.random_collect_size - old
@@ -65,6 +68,14 @@ class StepCollector:
             if ctx.env_step - old >= target_size:
                 ctx.trajectories, ctx.trajectory_end_idx = self._transitions.to_trajectories()
                 self._transitions.clear()
+                self.total_time += time.time() - temp_time
+                from ditk import logging
+                if ctx.train_iter % 500 == 0:
+                    logging.info(
+                        'Collect: Time Cost in Collect({:3f})'.format(
+                            self.total_time
+                        )
+                    )
                 break
 
 
